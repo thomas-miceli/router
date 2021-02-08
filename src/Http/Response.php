@@ -75,13 +75,13 @@ final class Response implements ResponseInterface
 
     public function json($data, ?int $status = 200, int $options = 0, int $depth = 512): Response
     {
-        $res = $this
+        $response = $this
             ->withHeader('Content-Type', 'application/json')
             ->withBody($this->streamFactory->createStream(json_encode($data, $options, $depth)));
 
-        $res = $res->response->withStatus($status);
+        $response = $response->response->withStatus($status);
 
-        return new Response($res, $this->streamFactory);
+        return new Response($response, $this->streamFactory);
     }
 
     public function withBody(StreamInterface $body): Response
@@ -94,14 +94,19 @@ final class Response implements ResponseInterface
         return new Response($this->response->withHeader($name, $value), $this->streamFactory);
     }
 
-    public function notFound(): ResponseInterface
+    public function error(): Response
     {
-        return $this->response->withStatus(404);
+        return $this->withStatus(500);
     }
 
-    public function forbidden(): ResponseInterface
+    public function notFound(): Response
     {
-        return $this->response->withStatus(403);
+        return $this->withStatus(404);
+    }
+
+    public function forbidden(): Response
+    {
+        return $this->withStatus(403);
     }
 
     public function setHeader($name, $value): Response
