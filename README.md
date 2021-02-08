@@ -28,8 +28,9 @@ $dependency->hello = 'hello';
 $router->registerInstance($dependency);
 
 $router->middleware(function (Request $request, RequestHandlerInterface $handler) {
-    // code executed before the route
     $request = $request->withAttribute('global', true);
+    
+    // code executed before the route
     $response = $handler->handle($request);
     // code executed after the route
 
@@ -38,8 +39,12 @@ $router->middleware(function (Request $request, RequestHandlerInterface $handler
 
 $router
     ->get('/hello/{name}', function ($name, Request $request, Response $response, stdClass $myClass) {
-        if ($request->getAttribute('middleware') === true) {
-            $myClass->ok = 'middleware works';
+        if ($request->getAttribute('route') === true) {
+            $myClass->route_middleware = 'works';
+        }
+
+        if ($request->getAttribute('global') === true) {
+            $myClass->global_middleware = 'works';
         }
         $myClass->hello .= " $name";
 
@@ -51,16 +56,16 @@ $router
     })
     ->middleware(function (Request $request, RequestHandlerInterface $handler) {
         // executed second
-        $request = $request->withAttribute('middleware', true);
+        $request = $request->withAttribute('route', true);
 
-        /** @var Response $res */
-        $res = $handler->handle($request);
-        $res->setHeader('after', 'true');
-        return $res;
+        /** @var Response $response */
+        $response = $handler->handle($request);
+        $response->setHeader('after', 'true');
+        return $response;
     })
     ->middleware(function (Request $request, RequestHandlerInterface $handler) {
         // executed first
-        $request = $request->withAttribute('middleware', false);
+        $request = $request->withAttribute('route', false);
         return $handler->handle($request);
     });
 
