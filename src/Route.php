@@ -15,7 +15,7 @@ final class Route implements RequestHandlerInterface
     private string $path;
     private array $matches = [];
     private array $matches_key = [];
-    private ?MiddlewareDispatcher $middlewares;
+    private ?MiddlewareDispatcher $middlewares = null;
 
     public function __construct(
         $path,
@@ -23,7 +23,6 @@ final class Route implements RequestHandlerInterface
         private Container $container,
     ) {
         $this->path = trim($path, '/');
-        $this->middlewares = null;
     }
 
     public function match($url): bool
@@ -41,7 +40,9 @@ final class Route implements RequestHandlerInterface
 
     public function middleware(Closure $callable): Route
     {
-        $this->middlewares = $this->middlewares ?? new MiddlewareDispatcher($this);
+        if (!$this->middlewares) {
+            $this->middlewares = new MiddlewareDispatcher($this);
+        }
         $this->middlewares->add($callable);
 
         return $this;
@@ -55,10 +56,7 @@ final class Route implements RequestHandlerInterface
 
     public function call(ServerRequestInterface $request): ResponseInterface
     {
-        if ($this->middlewares) {
-            return $this->middlewares->handle($request);
-        }
-        return $this->handle($request);
+        return $this->middlewares?->handle($request) ?? $this->handle($request);
     }
 
     public function handle(ServerRequestInterface $request) : ResponseInterface

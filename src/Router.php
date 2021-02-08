@@ -2,21 +2,27 @@
 
 namespace ThomasMiceli\Router;
 
+use Closure;
 use DI\Container;
 use DI\ContainerBuilder;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 use ThomasMiceli\Router\Http\HttpFactory;
 use ThomasMiceli\Router\Http\Request;
 use ThomasMiceli\Router\Http\Response;
 use ThomasMiceli\Router\Http\ResponseEmitter;
+use ThomasMiceli\Router\Middleware\MiddlewareDispatcher;
 use function DI\create;
 
-final class Router
+final class Router implements RequestHandlerInterface
 {
     private Request $req;
     private Response $res;
     private array $routes = [];
     private array $namedRoutes = [];
     private Container $container;
+    private ?MiddlewareDispatcher $middlewares = null;
 
     public function __construct()
     {
@@ -74,19 +80,25 @@ final class Router
         return $route;
     }
 
-    public function run(): void
+    public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $path = $this->req->getUri()->getPath();
-        $method = $this->req->getMethod();
+        $path = $request->getUri()->getPath();
+        $method = $request->getMethod();
         $res = $this->res->notFound();
 
         foreach ($this->routes[$method] as $route) {
             /* @var Route $route */
             if ($route->match($path)) {
-                $res = $route->call($this->req);
+                $res = $route->call($request);
                 break;
             }
         }
+        return $res;
+    }
+
+    public function run()
+    {
+        $res = $this->middlewares?->handle($this->req) ?? $this->handle($this->req);
         (new ResponseEmitter())->emit($res);
     }
 
@@ -98,6 +110,16 @@ final class Router
     public function registerInstance($i): void
     {
         $this->container->set($i::class, $i);
+    }
+
+    public function middleware(Closure $callable): Router
+    {
+        if (!$this->middlewares) {
+            $this->middlewares = new MiddlewareDispatcher($this);
+        }
+        $this->middlewares->add($callable);
+
+        return $this;
     }
 
     public function getContainer(): Container

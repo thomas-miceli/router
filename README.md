@@ -25,8 +25,16 @@ $router = new Router();
 
 $dependency = new stdClass();
 $dependency->hello = 'hello';
-
 $router->registerInstance($dependency);
+
+$router->middleware(function (Request $request, RequestHandlerInterface $handler) {
+    // code executed before the route
+    $request = $request->withAttribute('global', true);
+    $response = $handler->handle($request);
+    // code executed after the route
+
+    return $response;
+});
 
 $router
     ->get('/hello/{name}', function ($name, Request $request, Response $response, stdClass $myClass) {
