@@ -2,23 +2,26 @@
 
 namespace ThomasMiceli\Router;
 
-use Closure;
 use DI\Container;
 use DI\ContainerBuilder;
 use Error;
-use Exception;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use ThomasMiceli\Router\Exceptions\NotFoundException;
 use ThomasMiceli\Router\Http\HttpFactory;
 use ThomasMiceli\Router\Http\Request;
 use ThomasMiceli\Router\Http\Response;
 use ThomasMiceli\Router\Http\ResponseEmitter;
 use ThomasMiceli\Router\Middleware\MiddlewareDispatcher;
+use ThomasMiceli\Router\Middleware\MiddlewareTrait;
 use function DI\create;
 
 final class Router extends RouteManager implements RequestHandlerInterface
 {
+
+    use MiddlewareTrait;
+
     private Request $request;
     private Response $response;
     private ?MiddlewareDispatcher $middlewares = null;
@@ -54,16 +57,6 @@ final class Router extends RouteManager implements RequestHandlerInterface
         return $this->container;
     }
 
-    public function middleware(Closure $callable): Router
-    {
-        if (!$this->middlewares) {
-            $this->middlewares = new MiddlewareDispatcher($this);
-        }
-        $this->middlewares->add($callable);
-
-        return $this;
-    }
-
     public function run()
     {
         try {
@@ -71,12 +64,11 @@ final class Router extends RouteManager implements RequestHandlerInterface
             $response = $this->middlewares?->handle($this->request) ?? $this->handle($this->request);
         } catch (Error $e) {
             $response = $this->response->error();
-            $response->getBody()->write($e->getMessage());
-            $response->getBody()->write($e->getTraceAsString());
-        } catch (Exception $e) {
+            $response->getBody()->write('<pre>' . $e->getMessage() . '</pre>');
+            $response->getBody()->write('<pre>' . $e->getTraceAsString() . '</pre>');
+        } catch (NotFoundException $e) {
             $response = $this->response->notFound();
             $response->getBody()->write($e->getMessage());
-
         }
         (new ResponseEmitter())->emit($response);
 
@@ -93,7 +85,7 @@ final class Router extends RouteManager implements RequestHandlerInterface
                 return $route->call($request);
             }
         }
-        throw new Exception('Page not found');
+        throw new NotFoundException('Page not found');
     }
 
 

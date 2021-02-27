@@ -9,10 +9,13 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use ThomasMiceli\Router\Http\Request;
 use ThomasMiceli\Router\Middleware\MiddlewareDispatcher;
+use ThomasMiceli\Router\Middleware\MiddlewareTrait;
 
 final class Route implements RequestHandlerInterface
 {
-    
+
+    use MiddlewareTrait;
+
     private array $matches = [];
     private array $matches_key = [];
     private ?MiddlewareDispatcher $middlewares = null;
@@ -37,16 +40,6 @@ final class Route implements RequestHandlerInterface
         array_shift($matches);
         $this->matches = $matches;
         return true;
-    }
-
-    public function middleware(Closure $callable): Route
-    {
-        if (!$this->middlewares) {
-            $this->middlewares = new MiddlewareDispatcher($this);
-        }
-        $this->middlewares->add($callable);
-
-        return $this;
     }
 
     public function call(ServerRequestInterface $request): ResponseInterface

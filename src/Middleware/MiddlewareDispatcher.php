@@ -22,6 +22,7 @@ final class MiddlewareDispatcher implements RequestHandlerInterface
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        return $this->last->handle($request);
+        $a = $this->last->handle($request);
+        return $a;
     }
 }
