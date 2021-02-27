@@ -12,7 +12,8 @@ final class MiddlewareDispatcher implements RequestHandlerInterface
     public function __construct(
         private RequestHandlerInterface $last,
     )
-    {}
+    {
+    }
 
     public function add(Closure $callable)
     {

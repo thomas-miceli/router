@@ -11,7 +11,9 @@ final class Response implements ResponseInterface
     public function __construct(
         private ResponseInterface $response,
         private StreamFactoryInterface $streamFactory,
-    ) {}
+    )
+    {
+    }
 
     public function getProtocolVersion(): string
     {
@@ -63,11 +65,6 @@ final class Response implements ResponseInterface
         return $this->response->getStatusCode();
     }
 
-    public function withStatus($code, $reasonPhrase = ''): Response
-    {
-        return new Response($this->response->withStatus($code, $reasonPhrase), $this->streamFactory);
-    }
-
     public function getReasonPhrase(): string
     {
         return $this->response->getReasonPhrase();
@@ -97,6 +94,11 @@ final class Response implements ResponseInterface
     public function error(): Response
     {
         return $this->withStatus(500);
+    }
+
+    public function withStatus($code, $reasonPhrase = ''): Response
+    {
+        return new Response($this->response->withStatus($code, $reasonPhrase), $this->streamFactory);
     }
 
     public function notFound(): Response

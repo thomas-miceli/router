@@ -13,7 +13,8 @@ final class Middleware implements RequestHandlerInterface
         private RequestHandlerInterface|Closure $callable,
         private RequestHandlerInterface $next,
     )
-    {}
+    {
+    }
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {

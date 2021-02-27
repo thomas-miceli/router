@@ -10,7 +10,9 @@ final class Request implements ServerRequestInterface
 {
     public function __construct(
         private ServerRequestInterface $request,
-    ) {}
+    )
+    {
+    }
 
     public function getProtocolVersion(): string
     {
