@@ -2,6 +2,7 @@
 
 namespace ThomasMiceli\Router;
 
+use Closure;
 use DI\Container;
 use DI\ContainerBuilder;
 use Error;
@@ -26,8 +27,12 @@ final class Router extends RouteManager implements RequestHandlerInterface
     private Request $request;
     private Response $response;
     private ?MiddlewareDispatcher $middlewares = null;
+    private ?Closure $notFoundClosure = null;
+    private ?Closure $errorClosure = null;
 
-    public function __construct()
+    public function __construct(
+        private string $mode = 'prod'
+    )
     {
         parent::__construct('/');
         $this->request = HttpFactory::request();
@@ -62,21 +67,44 @@ final class Router extends RouteManager implements RequestHandlerInterface
         return $this->container;
     }
 
+    public function notFound(Closure $closure)
+    {
+        $this->notFoundClosure = $closure;
+    }
+
+    public function error(Closure $closure)
+    {
+        $this->errorClosure = $closure;
+    }
+
     public function run()
     {
         try {
             $this->response = $this->middlewares?->handle($this->request) ?? $this->handle($this->request);
         } catch (NotFoundException $e) {
+            if ($this->notFoundClosure) {
+                $this->container->call($this->notFoundClosure);
+            } else {
+                $this->response->getBody()->write('Page <b>' . $this->request->getUri() . '</b> not found');
+            }
             $this->response->notFound();
-            $this->response->getBody()->write($e->getMessage());
+
         } catch (Error|Exception $e) {
             $this->response->error();
-            $this->response->getBody()->write('<h1>Error ' . $this->response->getStatusCode() . ' ' . $this->response->getReasonPhrase() . '</h1>');
-            $this->response->getBody()->write('<pre>' . $e->getMessage() . '</pre>');
-            $this->response->getBody()->write('<pre>' . $e->getTraceAsString() . '</pre>');
-        }
+            if ($this->mode === 'dev') {
+                $this->response->getBody()->write('<h1>Error 500 ' . $this->response->getReasonPhrase() . '</h1>');
+                $this->response->getBody()->write('<pre>' . $e->getMessage() . '</pre>');
+                $this->response->getBody()->write('<pre>' . $e->getTraceAsString() . '</pre>');
+            } else if ($this->errorClosure) {
+                $this->container->call($this->errorClosure);
+            } else {
+                $this->response->getBody()->write('<h1>Error 500 ' . $this->response->getReasonPhrase() . '</h1>');
+            }
+            error_log($e->getMessage(), 0);
+            error_log($e->getTraceAsString(), 0);
 
-        (new ResponseEmitter())->emit($this->response);
+        }
+        (new ResponseEmitter)->emit($this->response);
     }
 
     public function handle(ServerRequestInterface $request): ResponseInterface
@@ -94,8 +122,6 @@ final class Router extends RouteManager implements RequestHandlerInterface
             }
         }
 
-        throw new NotFoundException('Page not found');
+        throw new NotFoundException();
     }
-
-
 }
