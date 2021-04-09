@@ -93,7 +93,9 @@ final class Response implements ResponseInterface
 
     public function error(): Response
     {
-        return $this->withStatus(500);
+        $this->setStatus(500);
+
+        return $this;
     }
 
     public function withStatus($code, $reasonPhrase = ''): Response
@@ -103,12 +105,16 @@ final class Response implements ResponseInterface
 
     public function notFound(): Response
     {
-        return $this->withStatus(404);
+        $this->setStatus(404);
+
+        return $this;
     }
 
     public function forbidden(): Response
     {
-        return $this->withStatus(403);
+        $this->setStatus(403);
+
+        return $this;
     }
 
     public function setHeader($name, $value): Response
@@ -117,7 +123,7 @@ final class Response implements ResponseInterface
         return $this;
     }
 
-    public function setStatus($code, $reasonPhrase): Response
+    public function setStatus($code, $reasonPhrase = ''): Response
     {
         $this->response = $this->response->withStatus($code, $reasonPhrase);
         return $this;

@@ -7,7 +7,6 @@ use DI\Container;
 
 class RouteManager
 {
-
     protected array $routes = [];
     protected array $namedRoutes = [];
 
@@ -64,15 +63,26 @@ class RouteManager
         return $this->route($path, $callable, $name, 'OPTIONS');
     }
 
-    public function group(string $prefix, Closure $routes)
+    public function group(string $prefix, Closure $routes): self
     {
         $r = new RouteManager($prefix, $this->container);
         $routes($r);
         $this->routes = array_merge_recursive($this->routes, $r->resolveRoutes());
+
+        return $r;
     }
 
     public function resolveRoutes(): array
     {
         return $this->routes;
+    }
+
+    public function middleware(Closure|string $callable): self
+    {
+        array_walk_recursive($this->routes, function ($item) use ($callable) {
+            $item->middleware($callable);
+        });
+
+        return $this;
     }
 }

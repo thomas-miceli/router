@@ -7,13 +7,13 @@ use DI\Container;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use ThomasMiceli\Router\Exceptions\EmptyResponseException;
 use ThomasMiceli\Router\Http\Request;
 use ThomasMiceli\Router\Middleware\MiddlewareDispatcher;
 use ThomasMiceli\Router\Middleware\MiddlewareTrait;
 
 final class Route implements RequestHandlerInterface
 {
-
     use MiddlewareTrait;
 
     private array $matches = [];
@@ -59,10 +59,16 @@ final class Route implements RequestHandlerInterface
             $class = $callable[0];
             $method = $callable[1];
             $this->container->make($class);
-            return $this->container->call([$class, $method], array_combine($this->matches_key, $this->matches));
+            $callable = [$class, $method];
         } else {
-            return $this->container->call($this->callable, array_combine($this->matches_key, $this->matches));
+            $callable = $this->callable;
         }
+
+        if (($h = $this->container->call($callable, array_combine($this->matches_key, $this->matches))) === null) {
+            throw new EmptyResponseException();
+        }
+
+        return $h;
     }
 
     private function paramMatch($match): string

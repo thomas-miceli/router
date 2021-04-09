@@ -8,7 +8,6 @@ use Psr\Http\Server\MiddlewareInterface;
 
 trait MiddlewareTrait
 {
-
     public function middleware(Closure|string $callable): self
     {
         if (!$this->middlewares) {

@@ -6,6 +6,7 @@ use Closure;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use ThomasMiceli\Router\Exceptions\EmptyResponseException;
 
 final class Middleware implements RequestHandlerInterface
 {
@@ -18,6 +19,10 @@ final class Middleware implements RequestHandlerInterface
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        return ($this->callable)($request, $this->next);
+        if (($h = ($this->callable)($request, $this->next)) === null) {
+            throw new EmptyResponseException();
+        }
+
+        return $h;
     }
 }
