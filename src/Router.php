@@ -10,6 +10,9 @@ use Exception;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use ReflectionObject;
+use ThomasMiceli\Router\Attributes\ControllerRoute;
+use ThomasMiceli\Router\Attributes\Route as RouteAttribute;
 use ThomasMiceli\Router\Exceptions\EmptyResponseException;
 use ThomasMiceli\Router\Exceptions\NotFoundException;
 use ThomasMiceli\Router\Http\HttpFactory;
@@ -24,8 +27,6 @@ final class Router extends RouteManager implements RequestHandlerInterface
 {
     use MiddlewareTrait;
 
-    private Request $request;
-    private Response $response;
     private ?MiddlewareDispatcher $middlewares = null;
     private ?Closure $notFoundClosure = null;
     private ?Closure $errorClosure = null;
@@ -35,12 +36,12 @@ final class Router extends RouteManager implements RequestHandlerInterface
     )
     {
         parent::__construct('/');
-        $this->request = HttpFactory::request();
-        $this->response = HttpFactory::response();
         $this->container = (new ContainerBuilder())->build();
 
-        $this->container->set(Request::class, $this->request);
-        $this->container->set(Response::class, $this->response);
+        $this->container->set(Request::class, HttpFactory::request());
+        $this->container->set(Response::class, HttpFactory::response());
+
+        $this->container->get(Request::class)->withAttribute('azd', 'azd');
     }
 
     public function registerClass($i): self
@@ -77,34 +78,59 @@ final class Router extends RouteManager implements RequestHandlerInterface
         $this->errorClosure = $closure;
     }
 
+    public function controller(string $class)
+    {
+        $reflection = new ReflectionObject($a = new $class);
+        /** @var ControllerRoute $objectAttributes */
+        $objectAttributes = $reflection->getAttributes(ControllerRoute::class)[0]->newInstance();
+        $methods = $reflection->getMethods();
+        foreach ($methods as $method) {
+            /** @var RouteAttribute $methodAttribute */
+            $methodAttribute = $method->getAttributes(RouteAttribute::class)[0]->newInstance();
+            $r = $this->route($objectAttributes->getPath() . $methodAttribute->getPath(), $method->getClosure($a), $methodAttribute->getName(), $methodAttribute->getMethod());
+            $objectMiddlewares = $objectAttributes->getMiddlewares();
+            $methodMiddlewares = $methodAttribute->getMiddlewares();
+
+            foreach ($methodMiddlewares as $middleware) {
+                $r->middleware($middleware);
+            }
+
+            foreach ($objectMiddlewares as $middleware) {
+                $r->middleware($middleware);
+            }
+        }
+    }
+
     public function run()
     {
+        $request = $this->container->get(Request::class);
+        $response = $this->container->get(Response::class);
         try {
-            $this->response = $this->middlewares?->handle($this->request) ?? $this->handle($this->request);
+            $response = $this->middlewares?->handle($this->container->get(Request::class)) ?? $this->handle($this->container->get(Request::class));
         } catch (NotFoundException $e) {
             if ($this->notFoundClosure) {
                 $this->container->call($this->notFoundClosure);
             } else {
-                $this->response->getBody()->write('Page <b>' . $this->request->getUri() . '</b> not found');
+                $response->getBody()->write('Page <b>' . $request->getUri() . '</b> not found');
             }
-            $this->response->notFound();
+            $response->notFound();
 
         } catch (Error|Exception $e) {
-            $this->response->error();
+            $response->error();
             if ($this->mode === 'dev') {
-                $this->response->getBody()->write('<h1>Error 500 ' . $this->response->getReasonPhrase() . '</h1>');
-                $this->response->getBody()->write('<pre>' . $e->getMessage() . '</pre>');
-                $this->response->getBody()->write('<pre>' . $e->getTraceAsString() . '</pre>');
+                $response->getBody()->write('<h1>Error 500 ' . $response->getReasonPhrase() . '</h1>');
+                $response->getBody()->write('<pre>' . $e->getMessage() . '</pre>');
+                $response->getBody()->write('<pre>' . $e->getTraceAsString() . '</pre>');
             } else if ($this->errorClosure) {
                 $this->container->call($this->errorClosure);
             } else {
-                $this->response->getBody()->write('<h1>Error 500 ' . $this->response->getReasonPhrase() . '</h1>');
+                $response->getBody()->write('<h1>Error 500 ' . $response->getReasonPhrase() . '</h1>');
             }
             error_log($e->getMessage(), 0);
             error_log($e->getTraceAsString(), 0);
 
         }
-        (new ResponseEmitter)->emit($this->response);
+        (new ResponseEmitter)->emit($response);
     }
 
     public function handle(ServerRequestInterface $request): ResponseInterface
@@ -112,16 +138,17 @@ final class Router extends RouteManager implements RequestHandlerInterface
         $path = $request->getUri()->getPath();
         $method = $request->getMethod();
 
-        /* @var Route $route */
-        foreach ($this->routes[$method] as $route) {
-            if ($route->match($path)) {
-                if (($h = $route->call($request)) === null) {
-                    throw new EmptyResponseException();
+        if ($this->routes[$method]) {
+            /* @var Route $route */
+            foreach ($this->routes[$method] as $route) {
+                if ($route->match($path)) {
+                    if (($h = $route->call($request)) === null) {
+                        throw new EmptyResponseException();
+                    }
+                    return $h;
                 }
-                return $h;
             }
         }
-
         throw new NotFoundException();
     }
 }
