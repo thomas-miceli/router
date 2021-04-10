@@ -19,7 +19,7 @@ final class Request implements ServerRequestInterface
         return $this->request->getProtocolVersion();
     }
 
-    public function withProtocolVersion($version): Request
+    public function withProtocolVersion($version): self
     {
         return new Request($this->request->withProtocolVersion($version));
     }
@@ -44,17 +44,17 @@ final class Request implements ServerRequestInterface
         return $this->request->getHeaderLine($name);
     }
 
-    public function withHeader($name, $value): Request
+    public function withHeader($name, $value): self
     {
         return new Request($this->request->withHeader($name, $value));
     }
 
-    public function withAddedHeader($name, $value): Request
+    public function withAddedHeader($name, $value): self
     {
         return new Request($this->request->withAddedHeader($name, $value));
     }
 
-    public function withoutHeader($name): Request
+    public function withoutHeader($name): self
     {
         return new Request($this->request->withoutHeader($name));
     }
@@ -64,7 +64,7 @@ final class Request implements ServerRequestInterface
         return $this->request->getBody();
     }
 
-    public function withBody(StreamInterface $body): Request
+    public function withBody(StreamInterface $body): self
     {
         return new Request($this->request->withBody($body));
     }
@@ -74,7 +74,7 @@ final class Request implements ServerRequestInterface
         return $this->request->getRequestTarget();
     }
 
-    public function withRequestTarget($requestTarget): Request
+    public function withRequestTarget($requestTarget): self
     {
         return new Request($this->request->withRequestTarget($requestTarget));
     }
@@ -84,7 +84,7 @@ final class Request implements ServerRequestInterface
         return $this->request->getMethod();
     }
 
-    public function withMethod($method): Request
+    public function withMethod($method): self
     {
         return new Request($this->request->withMethod($method));
     }
@@ -94,7 +94,7 @@ final class Request implements ServerRequestInterface
         return $this->request->getUri();
     }
 
-    public function withUri(UriInterface $uri, $preserveHost = false): Request
+    public function withUri(UriInterface $uri, $preserveHost = false): self
     {
         return new Request($this->request->withUri($uri, $preserveHost));
     }
@@ -109,7 +109,7 @@ final class Request implements ServerRequestInterface
         return $this->request->getCookieParams();
     }
 
-    public function withCookieParams(array $cookies): Request
+    public function withCookieParams(array $cookies): self
     {
         return new Request($this->request->withCookieParams($cookies));
     }
@@ -119,7 +119,7 @@ final class Request implements ServerRequestInterface
         return $this->request->getQueryParams();
     }
 
-    public function withQueryParams(array $query): Request
+    public function withQueryParams(array $query): self
     {
         return new Request($this->request->withQueryParams($query));
     }
@@ -129,7 +129,7 @@ final class Request implements ServerRequestInterface
         return $this->request->getUploadedFiles();
     }
 
-    public function withUploadedFiles(array $uploadedFiles): Request
+    public function withUploadedFiles(array $uploadedFiles): self
     {
         return new Request($this->request->withUploadedFiles($uploadedFiles));
     }
@@ -139,7 +139,7 @@ final class Request implements ServerRequestInterface
         return $this->request->getParsedBody();
     }
 
-    public function withParsedBody($data): Request
+    public function withParsedBody($data): self
     {
         return new Request($this->request->withParsedBody($data));
     }
@@ -154,12 +154,12 @@ final class Request implements ServerRequestInterface
         return $this->request->getAttribute($name, $default);
     }
 
-    public function withAttribute($name, $value): Request
+    public function withAttribute($name, $value): self
     {
         return new Request($this->request->withAttribute($name, $value));
     }
 
-    public function withoutAttribute($name): Request
+    public function withoutAttribute($name): self
     {
         return new Request($this->request->withoutAttribute($name));
     }

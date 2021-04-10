@@ -20,7 +20,7 @@ final class Response implements ResponseInterface
         return $this->response->getProtocolVersion();
     }
 
-    public function withProtocolVersion($version): Response
+    public function withProtocolVersion($version): self
     {
         return new Response($this->response->withProtocolVersion($version), $this->streamFactory);
     }
@@ -45,12 +45,12 @@ final class Response implements ResponseInterface
         return $this->response->getHeaderLine($name);
     }
 
-    public function withAddedHeader($name, $value): Response
+    public function withAddedHeader($name, $value): self
     {
         return new Response($this->response->withAddedHeader($name, $value), $this->streamFactory);
     }
 
-    public function withoutHeader($name): Response
+    public function withoutHeader($name): self
     {
         return new Response($this->response->withoutHeader($name), $this->streamFactory);
     }
@@ -70,7 +70,7 @@ final class Response implements ResponseInterface
         return $this->response->getReasonPhrase();
     }
 
-    public function json($data, ?int $status = 200, int $options = 0, int $depth = 512): Response
+    public function json($data, ?int $status = 200, int $options = 0, int $depth = 512): self
     {
         $response = $this
             ->withHeader('Content-Type', 'application/json')
@@ -81,75 +81,81 @@ final class Response implements ResponseInterface
         return new Response($response, $this->streamFactory);
     }
 
-    public function withBody(StreamInterface $body): Response
+    public function withBody(StreamInterface $body): self
     {
         return new Response($this->response->withBody($body), $this->streamFactory);
     }
 
-    public function withHeader($name, $value): Response
+    public function withHeader($name, $value): self
     {
         return new Response($this->response->withHeader($name, $value), $this->streamFactory);
     }
 
-    public function error(): Response
+    public function error(): self
     {
         $this->setStatus(500);
 
         return $this;
     }
 
-    public function withStatus($code, $reasonPhrase = ''): Response
+    public function withStatus($code, $reasonPhrase = ''): self
     {
         return new Response($this->response->withStatus($code, $reasonPhrase), $this->streamFactory);
     }
 
-    public function notFound(): Response
+    public function notFound(): self
     {
         $this->setStatus(404);
 
         return $this;
     }
 
-    public function forbidden(): Response
+    public function forbidden(): self
     {
         $this->setStatus(403);
 
         return $this;
     }
 
-    public function setHeader($name, $value): Response
+    public function setHeader($name, $value): self
     {
         $this->response = $this->response->withHeader($name, $value);
+        
         return $this;
     }
 
-    public function setStatus($code, $reasonPhrase = ''): Response
+    public function setStatus($code, $reasonPhrase = ''): self
     {
         $this->response = $this->response->withStatus($code, $reasonPhrase);
+        
         return $this;
     }
 
-    public function setBody(StreamInterface $body): Response
+    public function setBody(StreamInterface $body): self
     {
         $this->response = $this->response->withBody($body);
+        
         return $this;
     }
 
-    public function addHeader($name, $value): Response
+    public function addHeader($name, $value): self
     {
         $this->response = $this->response->withAddedHeader($name, $value);
+        
         return $this;
     }
 
-    public function removeHeader($name): Response
+    public function removeHeader($name): self
     {
         $this->response = $this->response->withoutHeader($name);
+        
         return $this;
     }
 
-    public function setProtocolVersion($version): Response
+    public function setProtocolVersion($version): self
     {
         $this->response = $this->response->withProtocolVersion($version);
+        
         return $this;
     }
 }

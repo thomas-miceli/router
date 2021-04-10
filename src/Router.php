@@ -44,6 +44,25 @@ final class Router extends RouteManager implements RequestHandlerInterface
         $this->container->get(Request::class)->withAttribute('azd', 'azd');
     }
 
+    public function containerGet($name): self
+    {
+        $this->container->get($name);
+
+        return $this;
+    }
+
+    public function containerSet($name, $obj): self
+    {
+        $this->container->set($name, $obj);
+
+        return $this;
+    }
+
+    public function containerHas($name): bool
+    {
+        return $this->container->has($name);
+    }
+
     public function registerClass($i): self
     {
         $this->container->set($i, create($i));
@@ -80,23 +99,25 @@ final class Router extends RouteManager implements RequestHandlerInterface
 
     public function controller(string $class)
     {
-        $reflection = new ReflectionObject($a = new $class);
-        /** @var ControllerRoute $objectAttributes */
-        $objectAttributes = $reflection->getAttributes(ControllerRoute::class)[0]->newInstance();
+        $reflection = new ReflectionObject($a = $this->container->make($class));
+        $objectAttributes = $reflection->getAttributes(ControllerRoute::class)[0] ?? null;
+        $objectAttributes = $objectAttributes?->newInstance();
         $methods = $reflection->getMethods();
         foreach ($methods as $method) {
             /** @var RouteAttribute $methodAttribute */
-            $methodAttribute = $method->getAttributes(RouteAttribute::class)[0]->newInstance();
-            $r = $this->route($objectAttributes->getPath() . $methodAttribute->getPath(), $method->getClosure($a), $methodAttribute->getName(), $methodAttribute->getMethod());
-            $objectMiddlewares = $objectAttributes->getMiddlewares();
-            $methodMiddlewares = $methodAttribute->getMiddlewares();
+            if (!empty($methodAttribute = $method->getAttributes(RouteAttribute::class))) {
+                $methodAttribute = $method->getAttributes(RouteAttribute::class)[0]->newInstance();
+                $r = $this->route(($objectAttributes?->getPath() ?? '') . $methodAttribute->getPath(), $method->getClosure($a), $methodAttribute->getName(), $methodAttribute->getMethod());
+                $objectMiddlewares = $objectAttributes?->getMiddlewares() ?? [];
+                $methodMiddlewares = $methodAttribute->getMiddlewares();
 
-            foreach ($methodMiddlewares as $middleware) {
-                $r->middleware($middleware);
-            }
+                foreach ($methodMiddlewares as $middleware) {
+                    $r->middleware($middleware);
+                }
 
-            foreach ($objectMiddlewares as $middleware) {
-                $r->middleware($middleware);
+                foreach ($objectMiddlewares as $middleware) {
+                    $r->middleware($middleware);
+                }
             }
         }
     }
